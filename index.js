@@ -44,6 +44,12 @@ async function run() {
         const usersCollection = client.db('doctorsPortal').collection('users');
         const doctorsCollection = client.db('doctorsPortal').collection('doctors');
 
+        //NOTE: make sure you use verifyAdmin after verifyJWT
+
+        const verifyAdmit = (req, res, next) => {
+            console.log(req.decoded.email)
+        }
+
         app.get('/appointmentOption', async (req, res) => {
             const date = req.query.date;
             console.log(date)
@@ -65,9 +71,9 @@ async function run() {
             res.send(options)
         })
 
-        app.get('/appointmentSpecialty', async(req, res) => {
+        app.get('/appointmentSpecialty', async (req, res) => {
             const query = {};
-            const result = await appointmentOptionCollection.find(query).project({name: 1}).toArray()
+            const result = await appointmentOptionCollection.find(query).project({ name: 1 }).toArray()
             res.send(result)
         })
 
@@ -113,7 +119,7 @@ async function run() {
             const user = await usersCollection.findOne(query);
             if (user) {
                 const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
-               return res.send({ accessToken: token })
+                return res.send({ accessToken: token })
             }
             res.status(403).send({ accessToken: '' })
         })
@@ -161,6 +167,27 @@ async function run() {
             }
 
             const result = await usersCollection.updateOne(filter, updatedDoc, options)
+            res.send(result)
+        })
+
+
+        // Doctors Area Start
+        app.post('/doctors', verifyJWT, async (req, res) => {
+            const doctor = req.body;
+            const result = await doctorsCollection.insertOne(doctor);
+            res.send(result)
+        })
+
+        app.get('/doctors', verifyJWT, async (req, res) => {
+            const query = {}
+            const doctors = await doctorsCollection.find(query).toArray();
+            res.send(doctors)
+        })
+
+        app.delete('/doctors/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) }
+            const result = await doctorsCollection.deleteOne(filter);
             res.send(result)
         })
 
